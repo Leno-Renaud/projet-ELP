@@ -222,7 +222,7 @@ func main() {
 	_ = rgbMatrix1 // éviter l'avertissement "unused"
 	rgbMatrix = blackWhite(rgbMatrix, width, height)
 	// Extraire les pixels
-	rgbMatrix := extractPixels(m, width, height)
+	rgbMatrix = extractPixels(m, width, height)
 	//rgbMatrix = blackWhite(rgbMatrix, width, height)
 	rgbMatrix = downscalePixels(rgbMatrix, width, height, 4)
 	// Convertir en image RGBA
@@ -234,7 +234,8 @@ func main() {
 
 // downscalePixels réduit la définition sans changer la taille :
 // pour chaque bloc `factor×factor` on calcule la couleur moyenne et on remplit
-// tout le bloc avec cette couleur (pixelisation)
+// tout le bloc avec cette couleur (pixelisation). Cette version est parallélisée
+// en répartissant les lignes de blocs entre plusieurs goroutines.
 func downscalePixels(rgbMatrix [][]Pixel, width, height, factor int) [][]Pixel {
 	if factor <= 1 {
 		return rgbMatrix
@@ -249,42 +250,73 @@ func downscalePixels(rgbMatrix [][]Pixel, width, height, factor int) [][]Pixel {
 		result[y] = make([]Pixel, width)
 	}
 
-	for by := 0; by < height; by += factor {
-		for bx := 0; bx < width; bx += factor {
-			var sumR, sumG, sumB uint64
-			count := 0
-			maxY := by + factor
-			if maxY > height {
-				maxY = height
-			}
-			maxX := bx + factor
-			if maxX > width {
-				maxX = width
-			}
+	blockRows := (height + factor - 1) / factor
+	blockCols := (width + factor - 1) / factor
 
-			for y := by; y < maxY; y++ {
-				for x := bx; x < maxX; x++ {
-					p := rgbMatrix[y][x]
-					sumR += uint64(p.R)
-					sumG += uint64(p.G)
-					sumB += uint64(p.B)
-					count++
-				}
-			}
-
-			avg := Pixel{
-				R: uint16(sumR / uint64(count)),
-				G: uint16(sumG / uint64(count)),
-				B: uint16(sumB / uint64(count)),
-			}
-
-			for y := by; y < maxY; y++ {
-				for x := bx; x < maxX; x++ {
-					result[y][x] = avg
-				}
-			}
-		}
+	numWorkers := runtime.NumCPU()
+	if numWorkers > blockRows {
+		numWorkers = blockRows
+	}
+	if numWorkers < 1 {
+		numWorkers = 1
 	}
 
+	rowsPerWorker := (blockRows + numWorkers - 1) / numWorkers
+
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+
+	for w := 0; w < numWorkers; w++ {
+		startBlockRow := w * rowsPerWorker
+		endBlockRow := (w + 1) * rowsPerWorker
+		if endBlockRow > blockRows {
+			endBlockRow = blockRows
+		}
+
+		go func(sBR, eBR int) {
+			defer wg.Done()
+			for br := sBR; br < eBR; br++ {
+				by := br * factor
+				maxY := by + factor
+				if maxY > height {
+					maxY = height
+				}
+
+				for bc := 0; bc < blockCols; bc++ {
+					bx := bc * factor
+					maxX := bx + factor
+					if maxX > width {
+						maxX = width
+					}
+
+					var sumR, sumG, sumB uint64
+					count := 0
+					for y := by; y < maxY; y++ {
+						for x := bx; x < maxX; x++ {
+							p := rgbMatrix[y][x]
+							sumR += uint64(p.R)
+							sumG += uint64(p.G)
+							sumB += uint64(p.B)
+							count++
+						}
+					}
+
+					avg := Pixel{
+						R: uint16(sumR / uint64(count)),
+						G: uint16(sumG / uint64(count)),
+						B: uint16(sumB / uint64(count)),
+					}
+
+					for y := by; y < maxY; y++ {
+						for x := bx; x < maxX; x++ {
+							result[y][x] = avg
+						}
+					}
+				}
+			}
+		}(startBlockRow, endBlockRow)
+	}
+
+	wg.Wait()
 	return result
 }
