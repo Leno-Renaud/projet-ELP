@@ -85,8 +85,16 @@ func blackWhite(rgbMatrix [][]Pixel, width, height int) [][]Pixel {
 }
 
 // pixelsToImage convertit une matrice de pixels en image RGBA
-func pixelsToImage(rgbMatrix [][]Pixel, width, height int) *image.RGBA {
+func pixelsToImage(rgbMatrix [][]Pixel) *image.RGBA {
+	if len(rgbMatrix) == 0 || len(rgbMatrix[0]) == 0 {
+		// Return an empty image if the matrix is empty to avoid panics
+		return image.NewRGBA(image.Rect(0, 0, 0, 0))
+	}
+
+	height := len(rgbMatrix)
+	width := len(rgbMatrix[0])
 	out := image.NewRGBA(image.Rect(0, 0, width, height))
+
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			p := rgbMatrix[y][x]
@@ -126,9 +134,67 @@ func main() {
 	fmt.Printf("Dimensions : %dx%d\n", width, height)
 	// Extraire les pixels
 	rgbMatrix := extractPixels(m, width, height)
-	rgbMatrix = blackWhite(rgbMatrix, width, height)
+	//rgbMatrix = blackWhite(rgbMatrix, width, height)
+	rgbMatrix = downscalePixels(rgbMatrix, width, height, 4)
 	// Convertir en image RGBA
-	out := pixelsToImage(rgbMatrix, width, height)
+	out := pixelsToImage(rgbMatrix)
 	// Sauvegarder
 	saveImage(out, "out2.png")
+}
+
+// downscalePixels réduit la définition sans changer la taille :
+// pour chaque bloc `factor×factor` on calcule la couleur moyenne et on remplit
+// tout le bloc avec cette couleur (pixelisation)
+func downscalePixels(rgbMatrix [][]Pixel, width, height, factor int) [][]Pixel {
+	if factor <= 1 {
+		return rgbMatrix
+	}
+	if len(rgbMatrix) == 0 || len(rgbMatrix[0]) == 0 {
+		return rgbMatrix
+	}
+
+	// Résultat a la même taille que l'entrée
+	result := make([][]Pixel, height)
+	for y := 0; y < height; y++ {
+		result[y] = make([]Pixel, width)
+	}
+
+	for by := 0; by < height; by += factor {
+		for bx := 0; bx < width; bx += factor {
+			var sumR, sumG, sumB uint64
+			count := 0
+			maxY := by + factor
+			if maxY > height {
+				maxY = height
+			}
+			maxX := bx + factor
+			if maxX > width {
+				maxX = width
+			}
+
+			for y := by; y < maxY; y++ {
+				for x := bx; x < maxX; x++ {
+					p := rgbMatrix[y][x]
+					sumR += uint64(p.R)
+					sumG += uint64(p.G)
+					sumB += uint64(p.B)
+					count++
+				}
+			}
+
+			avg := Pixel{
+				R: uint16(sumR / uint64(count)),
+				G: uint16(sumG / uint64(count)),
+				B: uint16(sumB / uint64(count)),
+			}
+
+			for y := by; y < maxY; y++ {
+				for x := bx; x < maxX; x++ {
+					result[y][x] = avg
+				}
+			}
+		}
+	}
+
+	return result
 }
