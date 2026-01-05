@@ -10,40 +10,27 @@ import (
 
 func main() {
 	// Charger l'image
-	m := loadImage("image.jpg")
+	image := loadImage("asiats.jpg")
 	// Récupérer les dimensions
-	bounds := m.Bounds()
+	bounds := image.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
 	fmt.Printf("Dimensions : %dx%d\n", width, height)
 	fmt.Printf("Nombre de cœurs : %d\n\n", runtime.NumCPU())
 
 	// ============================================
-	// Test 1 : extractPixels (VERSION SÉQUENTIELLE)
+	// Test 1 & 2 : extractPixels (SÉQUENTIEL vs PARALLÈLE)
 	// ============================================
-	fmt.Println("=== TEST extractPixels (SÉQUENTIEL) ===")
-	start1 := time.Now()
-	rgbMatrix1 := extractPixels(m, width, height)
-	duration1 := time.Since(start1)
-	fmt.Printf("Temps : %v\n\n", duration1)
+	CompareExtractPixels(image)
+	// ============================================
+	// Récupérer les matrices
+	// ============================================
+	rgbMatrix1 := extractPixels(image, width, height)
+	rgbMatrix2 := extractPixelsParallel(image, width, height)
 
 	// ============================================
-	// Test 2 : extractPixelsParallel (VERSION PARALLÈLE)
+	// Test blackWhite (SÉQUENTIEL vs PARALLÈLE)
 	// ============================================
-	fmt.Println("=== TEST extractPixelsParallel (PARALLÈLE) ===")
-	start2 := time.Now()
-	rgbMatrix2 := extractPixelsParallel(m, width, height)
-	duration2 := time.Since(start2)
-	fmt.Printf("Temps : %v\n\n", duration2)
-
-	// ============================================
-	// Comparaison
-	// ============================================
-	fmt.Println("=== COMPARAISON ===")
-	speedup := float64(duration1) / float64(duration2)
-	savings := (1 - float64(duration2)/float64(duration1)) * 100
-	fmt.Printf("Speedup : %.2fx\n", speedup)
-	fmt.Printf("Gain de temps : %.2f%%\n", savings)
-	fmt.Printf("Différence : %v\n\n", duration1-duration2)
+	CompareBlackWhite(rgbMatrix1, width, height)
 
 	// ============================================
 	// Remap de pixels (source -> cible) si une cible est disponible
@@ -56,7 +43,7 @@ func main() {
 		if tb.Max.X != width || tb.Max.Y != height {
 			fmt.Printf("Dimensions différentes (%dx%d vs %dx%d), remap ignoré.\n\n", tb.Max.X, tb.Max.Y, width, height)
 		} else {
-			srcMatrix := extractPixels(m, width, height)
+			srcMatrix := extractPixels(image, width, height)
 			tgtMatrix := extractPixels(timg, width, height)
 			startRemap := time.Now()
 			remapped := remapPixels(srcMatrix, tgtMatrix, 16) // 16 niveaux par canal → 4096 bins
@@ -75,7 +62,7 @@ func main() {
 	_ = rgbMatrix1 // éviter l'avertissement "unused"
 	rgbMatrix = blackWhiteParallel(rgbMatrix, width, height)
 	// Re-extraction (conserver le flux exact de l'ancien main)
-	rgbMatrix = extractPixels(m, width, height)
+	rgbMatrix = extractPixels(image, width, height)
 	// Pixelisation
 	rgbMatrix = downscalePixels(rgbMatrix, width, height, 4)
 

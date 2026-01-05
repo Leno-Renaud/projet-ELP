@@ -60,7 +60,7 @@ func extractPixels(m image.Image, width, height int) [][]Pixel {
 }
 
 // blackWhiteSeq convertit la matrice en niveaux de gris (séquentiel, in-place)
-func blackWhiteSeq(rgbMatrix [][]Pixel, width, height int) [][]Pixel {
+func blackWhite(rgbMatrix [][]Pixel, width, height int) [][]Pixel {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			p := rgbMatrix[y][x]
@@ -161,8 +161,6 @@ func downscalePixels(rgbMatrix [][]Pixel, width, height, factor int) [][]Pixel {
 
 	return result
 }
-
-
 
 func colorDistance(a, b Pixel) float64 {
 	dr := float64(a.R) - float64(b.R)
@@ -282,4 +280,3 @@ func transformToTarget(
 
 	return reconstructImage(mapped, width, height)
 }
-
