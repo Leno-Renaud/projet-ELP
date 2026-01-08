@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	serverIP := "localhost:9000" // Remplace par l'IP du serveur, ex: "192.168.1.10:9000"
+	serverIP := "10.87.174.195:9000" // Remplace par l'IP du serveur, ex: "192.168.1.10:9000"
 	conn, _ := net.Dial("tcp", serverIP)
 	defer conn.Close()
 
