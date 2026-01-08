@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
-	conn, _ := net.Dial("tcp", "localhost:9000")
+	serverIP := "localhost:9000" // Remplace par l'IP du serveur, ex: "192.168.1.10:9000"
+	conn, _ := net.Dial("tcp", serverIP)
 	defer conn.Close()
 
 	in, _ := os.Open("images_sources/asiats_500x500.jpg")
