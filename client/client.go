@@ -11,7 +11,7 @@ func main() {
 	conn, _ := net.Dial("tcp", serverIP)
 	defer conn.Close()
 
-	in, _ := os.Open("images_sources/asiats_500x500.jpg")
+	in, _ := os.Open("demo-project/images_sources/asiats_500x500.jpg")
 	defer in.Close()
 
 	io.Copy(conn, in)                // envoie l'image
