@@ -4373,6 +4373,181 @@ function _Browser_load(url)
 
 
 
+// SEND REQUEST
+
+var _Http_toTask = F3(function(router, toTask, request)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		function done(response) {
+			callback(toTask(request.expect.a(response)));
+		}
+
+		var xhr = new XMLHttpRequest();
+		xhr.addEventListener('error', function() { done($elm$http$Http$NetworkError_); });
+		xhr.addEventListener('timeout', function() { done($elm$http$Http$Timeout_); });
+		xhr.addEventListener('load', function() { done(_Http_toResponse(request.expect.b, xhr)); });
+		$elm$core$Maybe$isJust(request.tracker) && _Http_track(router, xhr, request.tracker.a);
+
+		try {
+			xhr.open(request.method, request.url, true);
+		} catch (e) {
+			return done($elm$http$Http$BadUrl_(request.url));
+		}
+
+		_Http_configureRequest(xhr, request);
+
+		request.body.a && xhr.setRequestHeader('Content-Type', request.body.a);
+		xhr.send(request.body.b);
+
+		return function() { xhr.c = true; xhr.abort(); };
+	});
+});
+
+
+// CONFIGURE
+
+function _Http_configureRequest(xhr, request)
+{
+	for (var headers = request.headers; headers.b; headers = headers.b) // WHILE_CONS
+	{
+		xhr.setRequestHeader(headers.a.a, headers.a.b);
+	}
+	xhr.timeout = request.timeout.a || 0;
+	xhr.responseType = request.expect.d;
+	xhr.withCredentials = request.allowCookiesFromOtherDomains;
+}
+
+
+// RESPONSES
+
+function _Http_toResponse(toBody, xhr)
+{
+	return A2(
+		200 <= xhr.status && xhr.status < 300 ? $elm$http$Http$GoodStatus_ : $elm$http$Http$BadStatus_,
+		_Http_toMetadata(xhr),
+		toBody(xhr.response)
+	);
+}
+
+
+// METADATA
+
+function _Http_toMetadata(xhr)
+{
+	return {
+		url: xhr.responseURL,
+		statusCode: xhr.status,
+		statusText: xhr.statusText,
+		headers: _Http_parseHeaders(xhr.getAllResponseHeaders())
+	};
+}
+
+
+// HEADERS
+
+function _Http_parseHeaders(rawHeaders)
+{
+	if (!rawHeaders)
+	{
+		return $elm$core$Dict$empty;
+	}
+
+	var headers = $elm$core$Dict$empty;
+	var headerPairs = rawHeaders.split('\r\n');
+	for (var i = headerPairs.length; i--; )
+	{
+		var headerPair = headerPairs[i];
+		var index = headerPair.indexOf(': ');
+		if (index > 0)
+		{
+			var key = headerPair.substring(0, index);
+			var value = headerPair.substring(index + 2);
+
+			headers = A3($elm$core$Dict$update, key, function(oldValue) {
+				return $elm$core$Maybe$Just($elm$core$Maybe$isJust(oldValue)
+					? value + ', ' + oldValue.a
+					: value
+				);
+			}, headers);
+		}
+	}
+	return headers;
+}
+
+
+// EXPECT
+
+var _Http_expect = F3(function(type, toBody, toValue)
+{
+	return {
+		$: 0,
+		d: type,
+		b: toBody,
+		a: toValue
+	};
+});
+
+var _Http_mapExpect = F2(function(func, expect)
+{
+	return {
+		$: 0,
+		d: expect.d,
+		b: expect.b,
+		a: function(x) { return func(expect.a(x)); }
+	};
+});
+
+function _Http_toDataView(arrayBuffer)
+{
+	return new DataView(arrayBuffer);
+}
+
+
+// BODY and PARTS
+
+var _Http_emptyBody = { $: 0 };
+var _Http_pair = F2(function(a, b) { return { $: 0, a: a, b: b }; });
+
+function _Http_toFormData(parts)
+{
+	for (var formData = new FormData(); parts.b; parts = parts.b) // WHILE_CONS
+	{
+		var part = parts.a;
+		formData.append(part.a, part.b);
+	}
+	return formData;
+}
+
+var _Http_bytesToBlob = F2(function(mime, bytes)
+{
+	return new Blob([bytes], { type: mime });
+});
+
+
+// PROGRESS
+
+function _Http_track(router, xhr, tracker)
+{
+	// TODO check out lengthComputable on loadstart event
+
+	xhr.upload.addEventListener('progress', function(event) {
+		if (xhr.c) { return; }
+		_Scheduler_rawSpawn(A2($elm$core$Platform$sendToSelf, router, _Utils_Tuple2(tracker, $elm$http$Http$Sending({
+			sent: event.loaded,
+			size: event.total
+		}))));
+	});
+	xhr.addEventListener('progress', function(event) {
+		if (xhr.c) { return; }
+		_Scheduler_rawSpawn(A2($elm$core$Platform$sendToSelf, router, _Utils_Tuple2(tracker, $elm$http$Http$Receiving({
+			received: event.loaded,
+			size: event.lengthComputable ? $elm$core$Maybe$Just(event.total) : $elm$core$Maybe$Nothing
+		}))));
+	});
+}
+
+
 var _Bitwise_and = F2(function(a, b)
 {
 	return a & b;
@@ -5242,10 +5417,1096 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
+var $author$project$Main$GotWords = function (a) {
+	return {$: 'GotWords', a: a};
+};
+var $author$project$Main$Playing = {$: 'Playing'};
+var $elm$http$Http$BadStatus_ = F2(
+	function (a, b) {
+		return {$: 'BadStatus_', a: a, b: b};
+	});
+var $elm$http$Http$BadUrl_ = function (a) {
+	return {$: 'BadUrl_', a: a};
+};
+var $elm$http$Http$GoodStatus_ = F2(
+	function (a, b) {
+		return {$: 'GoodStatus_', a: a, b: b};
+	});
+var $elm$http$Http$NetworkError_ = {$: 'NetworkError_'};
+var $elm$http$Http$Receiving = function (a) {
+	return {$: 'Receiving', a: a};
+};
+var $elm$http$Http$Sending = function (a) {
+	return {$: 'Sending', a: a};
+};
+var $elm$http$Http$Timeout_ = {$: 'Timeout_'};
+var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
+var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
+var $elm$core$Maybe$isJust = function (maybe) {
+	if (maybe.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
+var $elm$core$Basics$compare = _Utils_compare;
+var $elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
+				switch (_v1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return $elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
+			}
+		}
+	});
+var $elm$core$Dict$Black = {$: 'Black'};
+var $elm$core$Dict$RBNode_elm_builtin = F5(
+	function (a, b, c, d, e) {
+		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
+	});
+var $elm$core$Dict$Red = {$: 'Red'};
+var $elm$core$Dict$balance = F5(
+	function (color, key, value, left, right) {
+		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
+			var _v1 = right.a;
+			var rK = right.b;
+			var rV = right.c;
+			var rLeft = right.d;
+			var rRight = right.e;
+			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+				var _v3 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var lLeft = left.d;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					key,
+					value,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					color,
+					rK,
+					rV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
+					rRight);
+			}
+		} else {
+			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
+				var _v5 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var _v6 = left.d;
+				var _v7 = _v6.a;
+				var llK = _v6.b;
+				var llV = _v6.c;
+				var llLeft = _v6.d;
+				var llRight = _v6.e;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					lK,
+					lV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
+			} else {
+				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
+			}
+		}
+	});
+var $elm$core$Dict$insertHelp = F3(
+	function (key, value, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
+		} else {
+			var nColor = dict.a;
+			var nKey = dict.b;
+			var nValue = dict.c;
+			var nLeft = dict.d;
+			var nRight = dict.e;
+			var _v1 = A2($elm$core$Basics$compare, key, nKey);
+			switch (_v1.$) {
+				case 'LT':
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						A3($elm$core$Dict$insertHelp, key, value, nLeft),
+						nRight);
+				case 'EQ':
+					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
+				default:
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						nLeft,
+						A3($elm$core$Dict$insertHelp, key, value, nRight));
+			}
+		}
+	});
+var $elm$core$Dict$insert = F3(
+	function (key, value, dict) {
+		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
+		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
+			var _v1 = _v0.a;
+			var k = _v0.b;
+			var v = _v0.c;
+			var l = _v0.d;
+			var r = _v0.e;
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _v0;
+			return x;
+		}
+	});
+var $elm$core$Dict$getMin = function (dict) {
+	getMin:
+	while (true) {
+		if ((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) {
+			var left = dict.d;
+			var $temp$dict = left;
+			dict = $temp$dict;
+			continue getMin;
+		} else {
+			return dict;
+		}
+	}
+};
+var $elm$core$Dict$moveRedLeft = function (dict) {
+	if (((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) && (dict.e.$ === 'RBNode_elm_builtin')) {
+		if ((dict.e.d.$ === 'RBNode_elm_builtin') && (dict.e.d.a.$ === 'Red')) {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _v1 = dict.d;
+			var lClr = _v1.a;
+			var lK = _v1.b;
+			var lV = _v1.c;
+			var lLeft = _v1.d;
+			var lRight = _v1.e;
+			var _v2 = dict.e;
+			var rClr = _v2.a;
+			var rK = _v2.b;
+			var rV = _v2.c;
+			var rLeft = _v2.d;
+			var _v3 = rLeft.a;
+			var rlK = rLeft.b;
+			var rlV = rLeft.c;
+			var rlL = rLeft.d;
+			var rlR = rLeft.e;
+			var rRight = _v2.e;
+			return A5(
+				$elm$core$Dict$RBNode_elm_builtin,
+				$elm$core$Dict$Red,
+				rlK,
+				rlV,
+				A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Black,
+					k,
+					v,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					rlL),
+				A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rlR, rRight));
+		} else {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _v4 = dict.d;
+			var lClr = _v4.a;
+			var lK = _v4.b;
+			var lV = _v4.c;
+			var lLeft = _v4.d;
+			var lRight = _v4.e;
+			var _v5 = dict.e;
+			var rClr = _v5.a;
+			var rK = _v5.b;
+			var rV = _v5.c;
+			var rLeft = _v5.d;
+			var rRight = _v5.e;
+			if (clr.$ === 'Black') {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Black,
+					k,
+					v,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Black,
+					k,
+					v,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			}
+		}
+	} else {
+		return dict;
+	}
+};
+var $elm$core$Dict$moveRedRight = function (dict) {
+	if (((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) && (dict.e.$ === 'RBNode_elm_builtin')) {
+		if ((dict.d.d.$ === 'RBNode_elm_builtin') && (dict.d.d.a.$ === 'Red')) {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _v1 = dict.d;
+			var lClr = _v1.a;
+			var lK = _v1.b;
+			var lV = _v1.c;
+			var _v2 = _v1.d;
+			var _v3 = _v2.a;
+			var llK = _v2.b;
+			var llV = _v2.c;
+			var llLeft = _v2.d;
+			var llRight = _v2.e;
+			var lRight = _v1.e;
+			var _v4 = dict.e;
+			var rClr = _v4.a;
+			var rK = _v4.b;
+			var rV = _v4.c;
+			var rLeft = _v4.d;
+			var rRight = _v4.e;
+			return A5(
+				$elm$core$Dict$RBNode_elm_builtin,
+				$elm$core$Dict$Red,
+				lK,
+				lV,
+				A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
+				A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Black,
+					k,
+					v,
+					lRight,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, rK, rV, rLeft, rRight)));
+		} else {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _v5 = dict.d;
+			var lClr = _v5.a;
+			var lK = _v5.b;
+			var lV = _v5.c;
+			var lLeft = _v5.d;
+			var lRight = _v5.e;
+			var _v6 = dict.e;
+			var rClr = _v6.a;
+			var rK = _v6.b;
+			var rV = _v6.c;
+			var rLeft = _v6.d;
+			var rRight = _v6.e;
+			if (clr.$ === 'Black') {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Black,
+					k,
+					v,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Black,
+					k,
+					v,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			}
+		}
+	} else {
+		return dict;
+	}
+};
+var $elm$core$Dict$removeHelpPrepEQGT = F7(
+	function (targetKey, dict, color, key, value, left, right) {
+		if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+			var _v1 = left.a;
+			var lK = left.b;
+			var lV = left.c;
+			var lLeft = left.d;
+			var lRight = left.e;
+			return A5(
+				$elm$core$Dict$RBNode_elm_builtin,
+				color,
+				lK,
+				lV,
+				lLeft,
+				A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, lRight, right));
+		} else {
+			_v2$2:
+			while (true) {
+				if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Black')) {
+					if (right.d.$ === 'RBNode_elm_builtin') {
+						if (right.d.a.$ === 'Black') {
+							var _v3 = right.a;
+							var _v4 = right.d;
+							var _v5 = _v4.a;
+							return $elm$core$Dict$moveRedRight(dict);
+						} else {
+							break _v2$2;
+						}
+					} else {
+						var _v6 = right.a;
+						var _v7 = right.d;
+						return $elm$core$Dict$moveRedRight(dict);
+					}
+				} else {
+					break _v2$2;
+				}
+			}
+			return dict;
+		}
+	});
+var $elm$core$Dict$removeMin = function (dict) {
+	if ((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) {
+		var color = dict.a;
+		var key = dict.b;
+		var value = dict.c;
+		var left = dict.d;
+		var lColor = left.a;
+		var lLeft = left.d;
+		var right = dict.e;
+		if (lColor.$ === 'Black') {
+			if ((lLeft.$ === 'RBNode_elm_builtin') && (lLeft.a.$ === 'Red')) {
+				var _v3 = lLeft.a;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					color,
+					key,
+					value,
+					$elm$core$Dict$removeMin(left),
+					right);
+			} else {
+				var _v4 = $elm$core$Dict$moveRedLeft(dict);
+				if (_v4.$ === 'RBNode_elm_builtin') {
+					var nColor = _v4.a;
+					var nKey = _v4.b;
+					var nValue = _v4.c;
+					var nLeft = _v4.d;
+					var nRight = _v4.e;
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						$elm$core$Dict$removeMin(nLeft),
+						nRight);
+				} else {
+					return $elm$core$Dict$RBEmpty_elm_builtin;
+				}
+			}
+		} else {
+			return A5(
+				$elm$core$Dict$RBNode_elm_builtin,
+				color,
+				key,
+				value,
+				$elm$core$Dict$removeMin(left),
+				right);
+		}
+	} else {
+		return $elm$core$Dict$RBEmpty_elm_builtin;
+	}
+};
+var $elm$core$Dict$removeHelp = F2(
+	function (targetKey, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return $elm$core$Dict$RBEmpty_elm_builtin;
+		} else {
+			var color = dict.a;
+			var key = dict.b;
+			var value = dict.c;
+			var left = dict.d;
+			var right = dict.e;
+			if (_Utils_cmp(targetKey, key) < 0) {
+				if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Black')) {
+					var _v4 = left.a;
+					var lLeft = left.d;
+					if ((lLeft.$ === 'RBNode_elm_builtin') && (lLeft.a.$ === 'Red')) {
+						var _v6 = lLeft.a;
+						return A5(
+							$elm$core$Dict$RBNode_elm_builtin,
+							color,
+							key,
+							value,
+							A2($elm$core$Dict$removeHelp, targetKey, left),
+							right);
+					} else {
+						var _v7 = $elm$core$Dict$moveRedLeft(dict);
+						if (_v7.$ === 'RBNode_elm_builtin') {
+							var nColor = _v7.a;
+							var nKey = _v7.b;
+							var nValue = _v7.c;
+							var nLeft = _v7.d;
+							var nRight = _v7.e;
+							return A5(
+								$elm$core$Dict$balance,
+								nColor,
+								nKey,
+								nValue,
+								A2($elm$core$Dict$removeHelp, targetKey, nLeft),
+								nRight);
+						} else {
+							return $elm$core$Dict$RBEmpty_elm_builtin;
+						}
+					}
+				} else {
+					return A5(
+						$elm$core$Dict$RBNode_elm_builtin,
+						color,
+						key,
+						value,
+						A2($elm$core$Dict$removeHelp, targetKey, left),
+						right);
+				}
+			} else {
+				return A2(
+					$elm$core$Dict$removeHelpEQGT,
+					targetKey,
+					A7($elm$core$Dict$removeHelpPrepEQGT, targetKey, dict, color, key, value, left, right));
+			}
+		}
+	});
+var $elm$core$Dict$removeHelpEQGT = F2(
+	function (targetKey, dict) {
+		if (dict.$ === 'RBNode_elm_builtin') {
+			var color = dict.a;
+			var key = dict.b;
+			var value = dict.c;
+			var left = dict.d;
+			var right = dict.e;
+			if (_Utils_eq(targetKey, key)) {
+				var _v1 = $elm$core$Dict$getMin(right);
+				if (_v1.$ === 'RBNode_elm_builtin') {
+					var minKey = _v1.b;
+					var minValue = _v1.c;
+					return A5(
+						$elm$core$Dict$balance,
+						color,
+						minKey,
+						minValue,
+						left,
+						$elm$core$Dict$removeMin(right));
+				} else {
+					return $elm$core$Dict$RBEmpty_elm_builtin;
+				}
+			} else {
+				return A5(
+					$elm$core$Dict$balance,
+					color,
+					key,
+					value,
+					left,
+					A2($elm$core$Dict$removeHelp, targetKey, right));
+			}
+		} else {
+			return $elm$core$Dict$RBEmpty_elm_builtin;
+		}
+	});
+var $elm$core$Dict$remove = F2(
+	function (key, dict) {
+		var _v0 = A2($elm$core$Dict$removeHelp, key, dict);
+		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
+			var _v1 = _v0.a;
+			var k = _v0.b;
+			var v = _v0.c;
+			var l = _v0.d;
+			var r = _v0.e;
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _v0;
+			return x;
+		}
+	});
+var $elm$core$Dict$update = F3(
+	function (targetKey, alter, dictionary) {
+		var _v0 = alter(
+			A2($elm$core$Dict$get, targetKey, dictionary));
+		if (_v0.$ === 'Just') {
+			var value = _v0.a;
+			return A3($elm$core$Dict$insert, targetKey, value, dictionary);
+		} else {
+			return A2($elm$core$Dict$remove, targetKey, dictionary);
+		}
+	});
+var $elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var $elm$http$Http$expectStringResponse = F2(
+	function (toMsg, toResult) {
+		return A3(
+			_Http_expect,
+			'',
+			$elm$core$Basics$identity,
+			A2($elm$core$Basics$composeR, toResult, toMsg));
+	});
+var $elm$http$Http$BadBody = function (a) {
+	return {$: 'BadBody', a: a};
+};
+var $elm$http$Http$BadStatus = function (a) {
+	return {$: 'BadStatus', a: a};
+};
+var $elm$http$Http$BadUrl = function (a) {
+	return {$: 'BadUrl', a: a};
+};
+var $elm$http$Http$NetworkError = {$: 'NetworkError'};
+var $elm$http$Http$Timeout = {$: 'Timeout'};
+var $elm$core$Result$mapError = F2(
+	function (f, result) {
+		if (result.$ === 'Ok') {
+			var v = result.a;
+			return $elm$core$Result$Ok(v);
+		} else {
+			var e = result.a;
+			return $elm$core$Result$Err(
+				f(e));
+		}
+	});
+var $elm$http$Http$resolve = F2(
+	function (toResult, response) {
+		switch (response.$) {
+			case 'BadUrl_':
+				var url = response.a;
+				return $elm$core$Result$Err(
+					$elm$http$Http$BadUrl(url));
+			case 'Timeout_':
+				return $elm$core$Result$Err($elm$http$Http$Timeout);
+			case 'NetworkError_':
+				return $elm$core$Result$Err($elm$http$Http$NetworkError);
+			case 'BadStatus_':
+				var metadata = response.a;
+				return $elm$core$Result$Err(
+					$elm$http$Http$BadStatus(metadata.statusCode));
+			default:
+				var body = response.b;
+				return A2(
+					$elm$core$Result$mapError,
+					$elm$http$Http$BadBody,
+					toResult(body));
+		}
+	});
+var $elm$http$Http$expectString = function (toMsg) {
+	return A2(
+		$elm$http$Http$expectStringResponse,
+		toMsg,
+		$elm$http$Http$resolve($elm$core$Result$Ok));
+};
+var $elm$http$Http$emptyBody = _Http_emptyBody;
+var $elm$http$Http$Request = function (a) {
+	return {$: 'Request', a: a};
+};
+var $elm$http$Http$State = F2(
+	function (reqs, subs) {
+		return {reqs: reqs, subs: subs};
+	});
+var $elm$http$Http$init = $elm$core$Task$succeed(
+	A2($elm$http$Http$State, $elm$core$Dict$empty, _List_Nil));
+var $elm$core$Process$kill = _Scheduler_kill;
+var $elm$core$Process$spawn = _Scheduler_spawn;
+var $elm$http$Http$updateReqs = F3(
+	function (router, cmds, reqs) {
+		updateReqs:
+		while (true) {
+			if (!cmds.b) {
+				return $elm$core$Task$succeed(reqs);
+			} else {
+				var cmd = cmds.a;
+				var otherCmds = cmds.b;
+				if (cmd.$ === 'Cancel') {
+					var tracker = cmd.a;
+					var _v2 = A2($elm$core$Dict$get, tracker, reqs);
+					if (_v2.$ === 'Nothing') {
+						var $temp$router = router,
+							$temp$cmds = otherCmds,
+							$temp$reqs = reqs;
+						router = $temp$router;
+						cmds = $temp$cmds;
+						reqs = $temp$reqs;
+						continue updateReqs;
+					} else {
+						var pid = _v2.a;
+						return A2(
+							$elm$core$Task$andThen,
+							function (_v3) {
+								return A3(
+									$elm$http$Http$updateReqs,
+									router,
+									otherCmds,
+									A2($elm$core$Dict$remove, tracker, reqs));
+							},
+							$elm$core$Process$kill(pid));
+					}
+				} else {
+					var req = cmd.a;
+					return A2(
+						$elm$core$Task$andThen,
+						function (pid) {
+							var _v4 = req.tracker;
+							if (_v4.$ === 'Nothing') {
+								return A3($elm$http$Http$updateReqs, router, otherCmds, reqs);
+							} else {
+								var tracker = _v4.a;
+								return A3(
+									$elm$http$Http$updateReqs,
+									router,
+									otherCmds,
+									A3($elm$core$Dict$insert, tracker, pid, reqs));
+							}
+						},
+						$elm$core$Process$spawn(
+							A3(
+								_Http_toTask,
+								router,
+								$elm$core$Platform$sendToApp(router),
+								req)));
+				}
+			}
+		}
+	});
+var $elm$http$Http$onEffects = F4(
+	function (router, cmds, subs, state) {
+		return A2(
+			$elm$core$Task$andThen,
+			function (reqs) {
+				return $elm$core$Task$succeed(
+					A2($elm$http$Http$State, reqs, subs));
+			},
+			A3($elm$http$Http$updateReqs, router, cmds, state.reqs));
+	});
+var $elm$core$List$maybeCons = F3(
+	function (f, mx, xs) {
+		var _v0 = f(mx);
+		if (_v0.$ === 'Just') {
+			var x = _v0.a;
+			return A2($elm$core$List$cons, x, xs);
+		} else {
+			return xs;
+		}
+	});
+var $elm$core$List$filterMap = F2(
+	function (f, xs) {
+		return A3(
+			$elm$core$List$foldr,
+			$elm$core$List$maybeCons(f),
+			_List_Nil,
+			xs);
+	});
+var $elm$http$Http$maybeSend = F4(
+	function (router, desiredTracker, progress, _v0) {
+		var actualTracker = _v0.a;
+		var toMsg = _v0.b;
+		return _Utils_eq(desiredTracker, actualTracker) ? $elm$core$Maybe$Just(
+			A2(
+				$elm$core$Platform$sendToApp,
+				router,
+				toMsg(progress))) : $elm$core$Maybe$Nothing;
+	});
+var $elm$http$Http$onSelfMsg = F3(
+	function (router, _v0, state) {
+		var tracker = _v0.a;
+		var progress = _v0.b;
+		return A2(
+			$elm$core$Task$andThen,
+			function (_v1) {
+				return $elm$core$Task$succeed(state);
+			},
+			$elm$core$Task$sequence(
+				A2(
+					$elm$core$List$filterMap,
+					A3($elm$http$Http$maybeSend, router, tracker, progress),
+					state.subs)));
+	});
+var $elm$http$Http$Cancel = function (a) {
+	return {$: 'Cancel', a: a};
+};
+var $elm$http$Http$cmdMap = F2(
+	function (func, cmd) {
+		if (cmd.$ === 'Cancel') {
+			var tracker = cmd.a;
+			return $elm$http$Http$Cancel(tracker);
+		} else {
+			var r = cmd.a;
+			return $elm$http$Http$Request(
+				{
+					allowCookiesFromOtherDomains: r.allowCookiesFromOtherDomains,
+					body: r.body,
+					expect: A2(_Http_mapExpect, func, r.expect),
+					headers: r.headers,
+					method: r.method,
+					timeout: r.timeout,
+					tracker: r.tracker,
+					url: r.url
+				});
+		}
+	});
+var $elm$http$Http$MySub = F2(
+	function (a, b) {
+		return {$: 'MySub', a: a, b: b};
+	});
+var $elm$http$Http$subMap = F2(
+	function (func, _v0) {
+		var tracker = _v0.a;
+		var toMsg = _v0.b;
+		return A2(
+			$elm$http$Http$MySub,
+			tracker,
+			A2($elm$core$Basics$composeR, toMsg, func));
+	});
+_Platform_effectManagers['Http'] = _Platform_createManager($elm$http$Http$init, $elm$http$Http$onEffects, $elm$http$Http$onSelfMsg, $elm$http$Http$cmdMap, $elm$http$Http$subMap);
+var $elm$http$Http$command = _Platform_leaf('Http');
+var $elm$http$Http$subscription = _Platform_leaf('Http');
+var $elm$http$Http$request = function (r) {
+	return $elm$http$Http$command(
+		$elm$http$Http$Request(
+			{allowCookiesFromOtherDomains: false, body: r.body, expect: r.expect, headers: r.headers, method: r.method, timeout: r.timeout, tracker: r.tracker, url: r.url}));
+};
+var $elm$http$Http$get = function (r) {
+	return $elm$http$Http$request(
+		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
+};
+var $author$project$Main$initialValidWords = _List_fromArray(
+	['WORLD']);
+var $author$project$Main$init = function (_v0) {
+	return _Utils_Tuple2(
+		{currentGuess: '', errorMessage: $elm$core$Maybe$Nothing, gameState: $author$project$Main$Playing, guesses: _List_Nil, targetWord: 'WORLD', validWords: $author$project$Main$initialValidWords},
+		$elm$http$Http$get(
+			{
+				expect: $elm$http$Http$expectString($author$project$Main$GotWords),
+				url: '/words.txt'
+			}));
+};
+var $author$project$Main$KeyPressed = function (a) {
+	return {$: 'KeyPressed', a: a};
+};
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$browser$Browser$Events$Document = {$: 'Document'};
+var $elm$browser$Browser$Events$MySub = F3(
+	function (a, b, c) {
+		return {$: 'MySub', a: a, b: b, c: c};
+	});
+var $elm$browser$Browser$Events$State = F2(
+	function (subs, pids) {
+		return {pids: pids, subs: subs};
+	});
+var $elm$browser$Browser$Events$init = $elm$core$Task$succeed(
+	A2($elm$browser$Browser$Events$State, _List_Nil, $elm$core$Dict$empty));
+var $elm$browser$Browser$Events$nodeToKey = function (node) {
+	if (node.$ === 'Document') {
+		return 'd_';
+	} else {
+		return 'w_';
+	}
+};
+var $elm$browser$Browser$Events$addKey = function (sub) {
+	var node = sub.a;
+	var name = sub.b;
+	return _Utils_Tuple2(
+		_Utils_ap(
+			$elm$browser$Browser$Events$nodeToKey(node),
+			name),
+		sub);
+};
+var $elm$core$Dict$fromList = function (assocs) {
+	return A3(
+		$elm$core$List$foldl,
+		F2(
+			function (_v0, dict) {
+				var key = _v0.a;
+				var value = _v0.b;
+				return A3($elm$core$Dict$insert, key, value, dict);
+			}),
+		$elm$core$Dict$empty,
+		assocs);
+};
+var $elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
+		}
+	});
+var $elm$core$Dict$merge = F6(
+	function (leftStep, bothStep, rightStep, leftDict, rightDict, initialResult) {
+		var stepState = F3(
+			function (rKey, rValue, _v0) {
+				stepState:
+				while (true) {
+					var list = _v0.a;
+					var result = _v0.b;
+					if (!list.b) {
+						return _Utils_Tuple2(
+							list,
+							A3(rightStep, rKey, rValue, result));
+					} else {
+						var _v2 = list.a;
+						var lKey = _v2.a;
+						var lValue = _v2.b;
+						var rest = list.b;
+						if (_Utils_cmp(lKey, rKey) < 0) {
+							var $temp$rKey = rKey,
+								$temp$rValue = rValue,
+								$temp$_v0 = _Utils_Tuple2(
+								rest,
+								A3(leftStep, lKey, lValue, result));
+							rKey = $temp$rKey;
+							rValue = $temp$rValue;
+							_v0 = $temp$_v0;
+							continue stepState;
+						} else {
+							if (_Utils_cmp(lKey, rKey) > 0) {
+								return _Utils_Tuple2(
+									list,
+									A3(rightStep, rKey, rValue, result));
+							} else {
+								return _Utils_Tuple2(
+									rest,
+									A4(bothStep, lKey, lValue, rValue, result));
+							}
+						}
+					}
+				}
+			});
+		var _v3 = A3(
+			$elm$core$Dict$foldl,
+			stepState,
+			_Utils_Tuple2(
+				$elm$core$Dict$toList(leftDict),
+				initialResult),
+			rightDict);
+		var leftovers = _v3.a;
+		var intermediateResult = _v3.b;
+		return A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v4, result) {
+					var k = _v4.a;
+					var v = _v4.b;
+					return A3(leftStep, k, v, result);
+				}),
+			intermediateResult,
+			leftovers);
+	});
+var $elm$browser$Browser$Events$Event = F2(
+	function (key, event) {
+		return {event: event, key: key};
+	});
+var $elm$browser$Browser$Events$spawn = F3(
+	function (router, key, _v0) {
+		var node = _v0.a;
+		var name = _v0.b;
+		var actualNode = function () {
+			if (node.$ === 'Document') {
+				return _Browser_doc;
+			} else {
+				return _Browser_window;
+			}
+		}();
+		return A2(
+			$elm$core$Task$map,
+			function (value) {
+				return _Utils_Tuple2(key, value);
+			},
+			A3(
+				_Browser_on,
+				actualNode,
+				name,
+				function (event) {
+					return A2(
+						$elm$core$Platform$sendToSelf,
+						router,
+						A2($elm$browser$Browser$Events$Event, key, event));
+				}));
+	});
+var $elm$core$Dict$union = F2(
+	function (t1, t2) {
+		return A3($elm$core$Dict$foldl, $elm$core$Dict$insert, t2, t1);
+	});
+var $elm$browser$Browser$Events$onEffects = F3(
+	function (router, subs, state) {
+		var stepRight = F3(
+			function (key, sub, _v6) {
+				var deads = _v6.a;
+				var lives = _v6.b;
+				var news = _v6.c;
+				return _Utils_Tuple3(
+					deads,
+					lives,
+					A2(
+						$elm$core$List$cons,
+						A3($elm$browser$Browser$Events$spawn, router, key, sub),
+						news));
+			});
+		var stepLeft = F3(
+			function (_v4, pid, _v5) {
+				var deads = _v5.a;
+				var lives = _v5.b;
+				var news = _v5.c;
+				return _Utils_Tuple3(
+					A2($elm$core$List$cons, pid, deads),
+					lives,
+					news);
+			});
+		var stepBoth = F4(
+			function (key, pid, _v2, _v3) {
+				var deads = _v3.a;
+				var lives = _v3.b;
+				var news = _v3.c;
+				return _Utils_Tuple3(
+					deads,
+					A3($elm$core$Dict$insert, key, pid, lives),
+					news);
+			});
+		var newSubs = A2($elm$core$List$map, $elm$browser$Browser$Events$addKey, subs);
+		var _v0 = A6(
+			$elm$core$Dict$merge,
+			stepLeft,
+			stepBoth,
+			stepRight,
+			state.pids,
+			$elm$core$Dict$fromList(newSubs),
+			_Utils_Tuple3(_List_Nil, $elm$core$Dict$empty, _List_Nil));
+		var deadPids = _v0.a;
+		var livePids = _v0.b;
+		var makeNewPids = _v0.c;
+		return A2(
+			$elm$core$Task$andThen,
+			function (pids) {
+				return $elm$core$Task$succeed(
+					A2(
+						$elm$browser$Browser$Events$State,
+						newSubs,
+						A2(
+							$elm$core$Dict$union,
+							livePids,
+							$elm$core$Dict$fromList(pids))));
+			},
+			A2(
+				$elm$core$Task$andThen,
+				function (_v1) {
+					return $elm$core$Task$sequence(makeNewPids);
+				},
+				$elm$core$Task$sequence(
+					A2($elm$core$List$map, $elm$core$Process$kill, deadPids))));
+	});
+var $elm$browser$Browser$Events$onSelfMsg = F3(
+	function (router, _v0, state) {
+		var key = _v0.key;
+		var event = _v0.event;
+		var toMessage = function (_v2) {
+			var subKey = _v2.a;
+			var _v3 = _v2.b;
+			var node = _v3.a;
+			var name = _v3.b;
+			var decoder = _v3.c;
+			return _Utils_eq(subKey, key) ? A2(_Browser_decodeEvent, decoder, event) : $elm$core$Maybe$Nothing;
+		};
+		var messages = A2($elm$core$List$filterMap, toMessage, state.subs);
+		return A2(
+			$elm$core$Task$andThen,
+			function (_v1) {
+				return $elm$core$Task$succeed(state);
+			},
+			$elm$core$Task$sequence(
+				A2(
+					$elm$core$List$map,
+					$elm$core$Platform$sendToApp(router),
+					messages)));
+	});
+var $elm$browser$Browser$Events$subMap = F2(
+	function (func, _v0) {
+		var node = _v0.a;
+		var name = _v0.b;
+		var decoder = _v0.c;
+		return A3(
+			$elm$browser$Browser$Events$MySub,
+			node,
+			name,
+			A2($elm$json$Json$Decode$map, func, decoder));
+	});
+_Platform_effectManagers['Browser.Events'] = _Platform_createManager($elm$browser$Browser$Events$init, $elm$browser$Browser$Events$onEffects, $elm$browser$Browser$Events$onSelfMsg, 0, $elm$browser$Browser$Events$subMap);
+var $elm$browser$Browser$Events$subscription = _Platform_leaf('Browser.Events');
+var $elm$browser$Browser$Events$on = F3(
+	function (node, name, decoder) {
+		return $elm$browser$Browser$Events$subscription(
+			A3($elm$browser$Browser$Events$MySub, node, name, decoder));
+	});
+var $elm$browser$Browser$Events$onKeyDown = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'keydown');
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $author$project$Main$subscriptions = function (_v0) {
+	return $elm$browser$Browser$Events$onKeyDown(
+		A2(
+			$elm$json$Json$Decode$map,
+			$author$project$Main$KeyPressed,
+			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
+};
 var $author$project$Main$NewTargetWord = function (a) {
 	return {$: 'NewTargetWord', a: a};
 };
-var $author$project$Main$Playing = {$: 'Playing'};
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
 var $elm$random$Random$Generate = function (a) {
 	return {$: 'Generate', a: a};
 };
@@ -5353,8 +6614,90 @@ var $elm$random$Random$generate = F2(
 			$elm$random$Random$Generate(
 				A2($elm$random$Random$map, tagger, generator)));
 	});
-var $author$project$Main$initialValidWords = _List_fromArray(
-	['APPLE', 'BEACH', 'BRAIN', 'BREAD', 'BRUSH', 'CHAIR', 'CHEST', 'CHORD', 'CLICK', 'CLOCK', 'CLOUD', 'DANCE', 'DIARY', 'DRINK', 'DRIVE', 'EARTH', 'FEAST', 'FIELD', 'FRUIT', 'GLASS', 'GRAPE', 'GREEN', 'GHOST', 'HOUSE', 'JUICE', 'LIGHT', 'LEMON', 'MELON', 'MONEY', 'MUSIC', 'NIGHT', 'OCEAN', 'PARTY', 'PIANO', 'PILOT', 'PLANE', 'PHONE', 'PLANT', 'PLATE', 'POINT', 'POWER', 'RADIO', 'RIVER', 'ROBOT', 'ROCKY', 'SALAD', 'SAUCE', 'SHIRT', 'SHOES', 'SKATE', 'SMILE', 'SNAKE', 'SPACE', 'SPOON', 'STORM', 'SUGAR', 'SWEET', 'TABLE', 'TASTE', 'TIGER', 'TOAST', 'TOUCH', 'TOWER', 'TRAIN', 'TRUCK', 'VOICE', 'WATER', 'WATCH', 'WHALE', 'WORLD', 'WRITE', 'YOUTH', 'ZEBRA']);
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $elm$core$String$dropRight = F2(
+	function (n, string) {
+		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+	});
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $author$project$Main$Lost = {$: 'Lost'};
+var $author$project$Main$Won = {$: 'Won'};
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$Main$submitGuess = function (model) {
+	var guess = model.currentGuess;
+	if ($elm$core$String$length(guess) !== 5) {
+		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+	} else {
+		if (!A2($elm$core$List$member, guess, model.validWords)) {
+			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+		} else {
+			var newGuesses = _Utils_ap(
+				model.guesses,
+				_List_fromArray(
+					[guess]));
+			var newGameState = _Utils_eq(guess, model.targetWord) ? $author$project$Main$Won : (($elm$core$List$length(newGuesses) >= 6) ? $author$project$Main$Lost : $author$project$Main$Playing);
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{currentGuess: '', gameState: newGameState, guesses: newGuesses}),
+				$elm$core$Platform$Cmd$none);
+		}
+	}
+};
+var $elm$core$String$toUpper = _String_toUpper;
+var $author$project$Main$handleKey = F2(
+	function (key, model) {
+		return (key === 'Enter') ? $author$project$Main$submitGuess(model) : ((key === 'Backspace') ? _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{
+					currentGuess: A2($elm$core$String$dropRight, 1, model.currentGuess)
+				}),
+			$elm$core$Platform$Cmd$none) : ((($elm$core$String$length(key) === 1) && A2($elm$core$String$all, $elm$core$Char$isAlpha, key)) ? (($elm$core$String$length(model.currentGuess) < 5) ? _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{
+					currentGuess: _Utils_ap(
+						model.currentGuess,
+						$elm$core$String$toUpper(key))
+				}),
+			$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none)) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none)));
+	});
 var $elm$random$Random$constant = function (value) {
 	return $elm$random$Random$Generator(
 		function (seed) {
@@ -5363,9 +6706,6 @@ var $elm$random$Random$constant = function (value) {
 };
 var $elm$random$Random$addOne = function (value) {
 	return _Utils_Tuple2(1, value);
-};
-var $elm$core$Basics$negate = function (n) {
-	return -n;
 };
 var $elm$core$Basics$abs = function (n) {
 	return (n < 0) ? (-n) : n;
@@ -5453,511 +6793,41 @@ var $author$project$Main$randomWordGenerator = function (words) {
 		return A2($elm$random$Random$uniform, first, rest);
 	}
 };
-var $author$project$Main$init = function (_v0) {
-	return _Utils_Tuple2(
-		{currentGuess: '', gameState: $author$project$Main$Playing, guesses: _List_Nil, targetWord: 'WORLD', validWords: $author$project$Main$initialValidWords},
-		A2(
-			$elm$random$Random$generate,
-			$author$project$Main$NewTargetWord,
-			$author$project$Main$randomWordGenerator($author$project$Main$initialValidWords)));
-};
-var $author$project$Main$KeyPressed = function (a) {
-	return {$: 'KeyPressed', a: a};
-};
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$browser$Browser$Events$Document = {$: 'Document'};
-var $elm$browser$Browser$Events$MySub = F3(
-	function (a, b, c) {
-		return {$: 'MySub', a: a, b: b, c: c};
-	});
-var $elm$browser$Browser$Events$State = F2(
-	function (subs, pids) {
-		return {pids: pids, subs: subs};
-	});
-var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
-var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
-var $elm$browser$Browser$Events$init = $elm$core$Task$succeed(
-	A2($elm$browser$Browser$Events$State, _List_Nil, $elm$core$Dict$empty));
-var $elm$browser$Browser$Events$nodeToKey = function (node) {
-	if (node.$ === 'Document') {
-		return 'd_';
-	} else {
-		return 'w_';
-	}
-};
-var $elm$browser$Browser$Events$addKey = function (sub) {
-	var node = sub.a;
-	var name = sub.b;
-	return _Utils_Tuple2(
-		_Utils_ap(
-			$elm$browser$Browser$Events$nodeToKey(node),
-			name),
-		sub);
-};
-var $elm$core$Dict$Black = {$: 'Black'};
-var $elm$core$Dict$RBNode_elm_builtin = F5(
-	function (a, b, c, d, e) {
-		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
-	});
-var $elm$core$Dict$Red = {$: 'Red'};
-var $elm$core$Dict$balance = F5(
-	function (color, key, value, left, right) {
-		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
-			var _v1 = right.a;
-			var rK = right.b;
-			var rV = right.c;
-			var rLeft = right.d;
-			var rRight = right.e;
-			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
-				var _v3 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var lLeft = left.d;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					key,
-					value,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					color,
-					rK,
-					rV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
-					rRight);
-			}
-		} else {
-			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
-				var _v5 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var _v6 = left.d;
-				var _v7 = _v6.a;
-				var llK = _v6.b;
-				var llV = _v6.c;
-				var llLeft = _v6.d;
-				var llRight = _v6.e;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					lK,
-					lV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
-			} else {
-				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
-			}
-		}
-	});
-var $elm$core$Basics$compare = _Utils_compare;
-var $elm$core$Dict$insertHelp = F3(
-	function (key, value, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
-		} else {
-			var nColor = dict.a;
-			var nKey = dict.b;
-			var nValue = dict.c;
-			var nLeft = dict.d;
-			var nRight = dict.e;
-			var _v1 = A2($elm$core$Basics$compare, key, nKey);
-			switch (_v1.$) {
-				case 'LT':
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						A3($elm$core$Dict$insertHelp, key, value, nLeft),
-						nRight);
-				case 'EQ':
-					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
-				default:
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						nLeft,
-						A3($elm$core$Dict$insertHelp, key, value, nRight));
-			}
-		}
-	});
-var $elm$core$Dict$insert = F3(
-	function (key, value, dict) {
-		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
-		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
-			var _v1 = _v0.a;
-			var k = _v0.b;
-			var v = _v0.c;
-			var l = _v0.d;
-			var r = _v0.e;
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
-		} else {
-			var x = _v0;
-			return x;
-		}
-	});
-var $elm$core$Dict$fromList = function (assocs) {
-	return A3(
-		$elm$core$List$foldl,
-		F2(
-			function (_v0, dict) {
-				var key = _v0.a;
-				var value = _v0.b;
-				return A3($elm$core$Dict$insert, key, value, dict);
-			}),
-		$elm$core$Dict$empty,
-		assocs);
-};
-var $elm$core$Process$kill = _Scheduler_kill;
-var $elm$core$Dict$foldl = F3(
-	function (func, acc, dict) {
-		foldl:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return acc;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var $temp$func = func,
-					$temp$acc = A3(
-					func,
-					key,
-					value,
-					A3($elm$core$Dict$foldl, func, acc, left)),
-					$temp$dict = right;
-				func = $temp$func;
-				acc = $temp$acc;
-				dict = $temp$dict;
-				continue foldl;
-			}
-		}
-	});
-var $elm$core$Dict$merge = F6(
-	function (leftStep, bothStep, rightStep, leftDict, rightDict, initialResult) {
-		var stepState = F3(
-			function (rKey, rValue, _v0) {
-				stepState:
-				while (true) {
-					var list = _v0.a;
-					var result = _v0.b;
-					if (!list.b) {
-						return _Utils_Tuple2(
-							list,
-							A3(rightStep, rKey, rValue, result));
-					} else {
-						var _v2 = list.a;
-						var lKey = _v2.a;
-						var lValue = _v2.b;
-						var rest = list.b;
-						if (_Utils_cmp(lKey, rKey) < 0) {
-							var $temp$rKey = rKey,
-								$temp$rValue = rValue,
-								$temp$_v0 = _Utils_Tuple2(
-								rest,
-								A3(leftStep, lKey, lValue, result));
-							rKey = $temp$rKey;
-							rValue = $temp$rValue;
-							_v0 = $temp$_v0;
-							continue stepState;
-						} else {
-							if (_Utils_cmp(lKey, rKey) > 0) {
-								return _Utils_Tuple2(
-									list,
-									A3(rightStep, rKey, rValue, result));
-							} else {
-								return _Utils_Tuple2(
-									rest,
-									A4(bothStep, lKey, lValue, rValue, result));
-							}
-						}
-					}
-				}
-			});
-		var _v3 = A3(
-			$elm$core$Dict$foldl,
-			stepState,
-			_Utils_Tuple2(
-				$elm$core$Dict$toList(leftDict),
-				initialResult),
-			rightDict);
-		var leftovers = _v3.a;
-		var intermediateResult = _v3.b;
-		return A3(
-			$elm$core$List$foldl,
-			F2(
-				function (_v4, result) {
-					var k = _v4.a;
-					var v = _v4.b;
-					return A3(leftStep, k, v, result);
-				}),
-			intermediateResult,
-			leftovers);
-	});
-var $elm$browser$Browser$Events$Event = F2(
-	function (key, event) {
-		return {event: event, key: key};
-	});
-var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
-var $elm$browser$Browser$Events$spawn = F3(
-	function (router, key, _v0) {
-		var node = _v0.a;
-		var name = _v0.b;
-		var actualNode = function () {
-			if (node.$ === 'Document') {
-				return _Browser_doc;
-			} else {
-				return _Browser_window;
-			}
-		}();
-		return A2(
-			$elm$core$Task$map,
-			function (value) {
-				return _Utils_Tuple2(key, value);
-			},
-			A3(
-				_Browser_on,
-				actualNode,
-				name,
-				function (event) {
-					return A2(
-						$elm$core$Platform$sendToSelf,
-						router,
-						A2($elm$browser$Browser$Events$Event, key, event));
-				}));
-	});
-var $elm$core$Dict$union = F2(
-	function (t1, t2) {
-		return A3($elm$core$Dict$foldl, $elm$core$Dict$insert, t2, t1);
-	});
-var $elm$browser$Browser$Events$onEffects = F3(
-	function (router, subs, state) {
-		var stepRight = F3(
-			function (key, sub, _v6) {
-				var deads = _v6.a;
-				var lives = _v6.b;
-				var news = _v6.c;
-				return _Utils_Tuple3(
-					deads,
-					lives,
-					A2(
-						$elm$core$List$cons,
-						A3($elm$browser$Browser$Events$spawn, router, key, sub),
-						news));
-			});
-		var stepLeft = F3(
-			function (_v4, pid, _v5) {
-				var deads = _v5.a;
-				var lives = _v5.b;
-				var news = _v5.c;
-				return _Utils_Tuple3(
-					A2($elm$core$List$cons, pid, deads),
-					lives,
-					news);
-			});
-		var stepBoth = F4(
-			function (key, pid, _v2, _v3) {
-				var deads = _v3.a;
-				var lives = _v3.b;
-				var news = _v3.c;
-				return _Utils_Tuple3(
-					deads,
-					A3($elm$core$Dict$insert, key, pid, lives),
-					news);
-			});
-		var newSubs = A2($elm$core$List$map, $elm$browser$Browser$Events$addKey, subs);
-		var _v0 = A6(
-			$elm$core$Dict$merge,
-			stepLeft,
-			stepBoth,
-			stepRight,
-			state.pids,
-			$elm$core$Dict$fromList(newSubs),
-			_Utils_Tuple3(_List_Nil, $elm$core$Dict$empty, _List_Nil));
-		var deadPids = _v0.a;
-		var livePids = _v0.b;
-		var makeNewPids = _v0.c;
-		return A2(
-			$elm$core$Task$andThen,
-			function (pids) {
-				return $elm$core$Task$succeed(
-					A2(
-						$elm$browser$Browser$Events$State,
-						newSubs,
-						A2(
-							$elm$core$Dict$union,
-							livePids,
-							$elm$core$Dict$fromList(pids))));
-			},
-			A2(
-				$elm$core$Task$andThen,
-				function (_v1) {
-					return $elm$core$Task$sequence(makeNewPids);
-				},
-				$elm$core$Task$sequence(
-					A2($elm$core$List$map, $elm$core$Process$kill, deadPids))));
-	});
-var $elm$core$List$maybeCons = F3(
-	function (f, mx, xs) {
-		var _v0 = f(mx);
-		if (_v0.$ === 'Just') {
-			var x = _v0.a;
-			return A2($elm$core$List$cons, x, xs);
-		} else {
-			return xs;
-		}
-	});
-var $elm$core$List$filterMap = F2(
-	function (f, xs) {
-		return A3(
-			$elm$core$List$foldr,
-			$elm$core$List$maybeCons(f),
-			_List_Nil,
-			xs);
-	});
-var $elm$browser$Browser$Events$onSelfMsg = F3(
-	function (router, _v0, state) {
-		var key = _v0.key;
-		var event = _v0.event;
-		var toMessage = function (_v2) {
-			var subKey = _v2.a;
-			var _v3 = _v2.b;
-			var node = _v3.a;
-			var name = _v3.b;
-			var decoder = _v3.c;
-			return _Utils_eq(subKey, key) ? A2(_Browser_decodeEvent, decoder, event) : $elm$core$Maybe$Nothing;
-		};
-		var messages = A2($elm$core$List$filterMap, toMessage, state.subs);
-		return A2(
-			$elm$core$Task$andThen,
-			function (_v1) {
-				return $elm$core$Task$succeed(state);
-			},
-			$elm$core$Task$sequence(
-				A2(
-					$elm$core$List$map,
-					$elm$core$Platform$sendToApp(router),
-					messages)));
-	});
-var $elm$browser$Browser$Events$subMap = F2(
-	function (func, _v0) {
-		var node = _v0.a;
-		var name = _v0.b;
-		var decoder = _v0.c;
-		return A3(
-			$elm$browser$Browser$Events$MySub,
-			node,
-			name,
-			A2($elm$json$Json$Decode$map, func, decoder));
-	});
-_Platform_effectManagers['Browser.Events'] = _Platform_createManager($elm$browser$Browser$Events$init, $elm$browser$Browser$Events$onEffects, $elm$browser$Browser$Events$onSelfMsg, 0, $elm$browser$Browser$Events$subMap);
-var $elm$browser$Browser$Events$subscription = _Platform_leaf('Browser.Events');
-var $elm$browser$Browser$Events$on = F3(
-	function (node, name, decoder) {
-		return $elm$browser$Browser$Events$subscription(
-			A3($elm$browser$Browser$Events$MySub, node, name, decoder));
-	});
-var $elm$browser$Browser$Events$onKeyDown = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'keydown');
-var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$browser$Browser$Events$onKeyDown(
-		A2(
-			$elm$json$Json$Decode$map,
-			$author$project$Main$KeyPressed,
-			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
-};
-var $elm$core$String$dropRight = F2(
-	function (n, string) {
-		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
-	});
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Main$Lost = {$: 'Lost'};
-var $author$project$Main$Won = {$: 'Won'};
-var $elm$core$Basics$ge = _Utils_ge;
-var $elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
-var $elm$core$Basics$neq = _Utils_notEqual;
-var $elm$core$Basics$not = _Basics_not;
-var $author$project$Main$submitGuess = function (model) {
-	var guess = model.currentGuess;
-	if ($elm$core$String$length(guess) !== 5) {
-		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-	} else {
-		if (!A2($elm$core$List$member, guess, model.validWords)) {
-			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-		} else {
-			var newGuesses = _Utils_ap(
-				model.guesses,
-				_List_fromArray(
-					[guess]));
-			var newGameState = _Utils_eq(guess, model.targetWord) ? $author$project$Main$Won : (($elm$core$List$length(newGuesses) >= 6) ? $author$project$Main$Lost : $author$project$Main$Playing);
-			return _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{currentGuess: '', gameState: newGameState, guesses: newGuesses}),
-				$elm$core$Platform$Cmd$none);
-		}
-	}
-};
-var $elm$core$String$toUpper = _String_toUpper;
-var $author$project$Main$handleKey = F2(
-	function (key, model) {
-		return (key === 'Enter') ? $author$project$Main$submitGuess(model) : ((key === 'Backspace') ? _Utils_Tuple2(
-			_Utils_update(
-				model,
-				{
-					currentGuess: A2($elm$core$String$dropRight, 1, model.currentGuess)
-				}),
-			$elm$core$Platform$Cmd$none) : ((($elm$core$String$length(key) === 1) && A2($elm$core$String$all, $elm$core$Char$isAlpha, key)) ? (($elm$core$String$length(model.currentGuess) < 5) ? _Utils_Tuple2(
-			_Utils_update(
-				model,
-				{
-					currentGuess: _Utils_ap(
-						model.currentGuess,
-						$elm$core$String$toUpper(key))
-				}),
-			$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none)) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none)));
-	});
+var $elm$core$String$words = _String_words;
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
+			case 'GotWords':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var fullText = result.a;
+					var words = A2(
+						$elm$core$List$filter,
+						function (w) {
+							return $elm$core$String$length(w) === 5;
+						},
+						A2(
+							$elm$core$List$map,
+							$elm$core$String$toUpper,
+							$elm$core$String$words(fullText)));
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{validWords: words}),
+						A2(
+							$elm$random$Random$generate,
+							$author$project$Main$NewTargetWord,
+							$author$project$Main$randomWordGenerator(words)));
+				} else {
+					var error = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMessage: $elm$core$Maybe$Just('Failed to load words')
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 			case 'Restart':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -6229,6 +7099,28 @@ var $author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Elm Wordle')
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'font-size', '12px'),
+						A2($elm$html$Html$Attributes$style, 'color', '#666'),
+						A2($elm$html$Html$Attributes$style, 'margin-bottom', '10px')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						function () {
+							var _v0 = model.errorMessage;
+							if (_v0.$ === 'Just') {
+								var err = _v0.a;
+								return 'Error: ' + err;
+							} else {
+								return 'Words loaded: ' + $elm$core$String$fromInt(
+									$elm$core$List$length(model.validWords));
+							}
+						}())
 					])),
 				$author$project$Main$viewGrid(model),
 				$author$project$Main$viewMessage(model),
