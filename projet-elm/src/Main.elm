@@ -14,12 +14,11 @@ import Random
 
 
 main : Program () Model Msg
-main =
-    Browser.element   
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
+main = Browser.element
+        {init = init,
+        view = view,
+        update = update,
+        subscriptions = subscriptions
         }
 
 
@@ -33,33 +32,32 @@ type GameState    -- Déclaration du type GameState
     | Lost
 
 
-type alias Model = -- Déclaration du type Model , qui contient l'état du jeu
-    { guesses : List String
-    , currentGuess : String
-    , targetWord : String
-    , gameState : GameState
-    , validWords : List String
-    , errorMessage : Maybe String
+type alias Model =
+    {guesses : List String,
+    currentGuess : String,
+    targetWord : String,
+    gameState : GameState,
+    validWords : List String,
+    errorMessage : Maybe String
     }
 
 
-initialValidWords : List String -- Liste initiale de mots valides
-initialValidWords =
-    [ "WORLD" ]
+initialValidWords : List String
+initialValidWords = [ "WORLD" ]
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { guesses = []
-      , currentGuess = ""
-      , targetWord = "WORLD"
-      , gameState = Playing
-      , validWords = initialValidWords
-      , errorMessage = Nothing
-      }
-    , Http.get
-        { url = "/words.txt"
-        , expect = Http.expectString GotWords
+    ( {guesses = [],
+      currentGuess = "",
+      targetWord = "WORLD",
+      gameState = Playing,
+      validWords = initialValidWords,
+      errorMessage = Nothing
+      },
+    Http.get
+        { url = "/words.txt",
+        expect = Http.expectString GotWords
         }
     )
 
@@ -78,7 +76,7 @@ randomWordGenerator words =
 -- UPDATE
 
 
-type Msg
+type Msg 
     = KeyPressed String
     | NewTargetWord String
     | Restart
