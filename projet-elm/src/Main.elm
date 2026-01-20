@@ -15,7 +15,7 @@ import Random
 
 main : Program () Model Msg
 main =
-    Browser.element
+    Browser.element   
         { init = init
         , view = view
         , update = update
@@ -27,13 +27,13 @@ main =
 -- MODEL
 
 
-type GameState
+type GameState    -- Déclaration du type GameState
     = Playing
     | Won
     | Lost
 
 
-type alias Model =
+type alias Model = -- Déclaration du type Model , qui contient l'état du jeu
     { guesses : List String
     , currentGuess : String
     , targetWord : String
@@ -43,7 +43,7 @@ type alias Model =
     }
 
 
-initialValidWords : List String
+initialValidWords : List String -- Liste initiale de mots valides
 initialValidWords =
     [ "WORLD" ]
 
@@ -88,18 +88,18 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotWords result ->
+        GotWords result ->  -- Gestion de la réponse HTTP pour charger les mots valides
             case result of
-                Ok fullText ->
+                Ok fullText -> -- Si la requête réussit, on traite le texte reçu
                     let
                         words =
-                            fullText
+                            fullText --> on diviser le texte en mots, les mettre en majuscules et filtrer ceux de longueur 5
                                 |> String.words
                                 |> List.map String.toUpper
                                 |> List.filter (\w -> String.length w == 5)
                     in
-                    ( { model | validWords = words }
-                    , Random.generate NewTargetWord (randomWordGenerator words)
+                    ( { model | validWords = words } -- Mise à jour du modèle avec les mots valides
+                    , Random.generate NewTargetWord (randomWordGenerator words) -- Génération d'un mot cible aléatoire
                     )
 
                 Err error ->
@@ -125,15 +125,15 @@ update msg model =
                 handleKey key model
 
 
-handleKey : String -> Model -> ( Model, Cmd Msg )
+handleKey : String -> Model -> ( Model, Cmd Msg )-- Gestion des entrées clavier
 handleKey key model =
     if key == "Enter" then
         submitGuess model
 
     else if key == "Backspace" then
-        ( { model | currentGuess = String.dropRight 1 model.currentGuess }, Cmd.none )
+        ( { model | currentGuess = String.dropRight 1 model.currentGuess }, Cmd.none )  
 
-    else if String.length key == 1 && String.all Char.isAlpha key then
+    else if String.length key == 1 && String.all Char.isAlpha key then-- Si la touche est une lettre
         if String.length model.currentGuess < 5 then
             ( { model | currentGuess = model.currentGuess ++ String.toUpper key }, Cmd.none )
 
@@ -157,7 +157,7 @@ submitGuess model =
          ( model, Cmd.none )
     else
         let
-            newGuesses =
+            newGuesses =-- Mise à jour de la liste des suppositions avec la nouvelle supposition
                 model.guesses ++ [ guess ]
 
             newGameState =
@@ -233,7 +233,7 @@ viewMessage model =
 viewGrid : Model -> Html msg
 viewGrid model =
     let
-        rows = List.range 0 5
+        rows = List.range 0 5-- Six lignes pour les suppositions
     in
     div [ style "display" "grid", style "grid-template-rows" "repeat(6, 1fr)", style "gap" "5px" ]
         (List.map (viewRow model) rows)
@@ -307,16 +307,16 @@ viewCell targetWord isSubmitted guessWord index char =
 getCellColor : String -> String -> Int -> String
 getCellColor target guess index =
     let
-        targetList = String.toList target
+        targetList = String.toList target-- Liste des caractères du mot cible
         guessList = String.toList guess
         
-        guessChar = 
+        guessChar = -- Caractère de la supposition à l'index donné
             guessList 
             |> List.drop index 
             |> List.head 
             |> Maybe.withDefault ' '
             
-        targetChar = 
+        targetChar = -- Caractère du mot cible à l'index donné
             targetList 
             |> List.drop index 
             |> List.head 
