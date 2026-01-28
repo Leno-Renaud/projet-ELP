@@ -24,7 +24,7 @@ export default class Deck {
       this.cards.push({ type: CARD_TYPES.BONUS, value: v });
     }
 
-    // x2
+    // multiplier x2
     this.cards.push({ type: CARD_TYPES.MULTIPLIER });
   }
 
