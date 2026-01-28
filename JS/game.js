@@ -9,6 +9,10 @@ export default class Game {
   }
 
   async start() {
+    if (!Array.isArray(this.players) || this.players.length < 2) {
+      throw new Error("Game.start: nombre de joueurs invalide (min 2)." );
+    }
+
     let roundNumber = 1;
 
     while (!this.players.some(p => p.totalScore >= 200)) {

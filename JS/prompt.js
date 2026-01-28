@@ -6,6 +6,6 @@ const rl = readline.createInterface({
 });
 
 export const ask = (q) =>
-  new Promise(resolve => rl.question(q, resolve));
+  new Promise(resolve => rl.question(q, (answer) => resolve(String(answer).trim())));
 
 export const closePrompt = () => rl.close();

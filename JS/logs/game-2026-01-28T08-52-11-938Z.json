@@ -1,0 +1,408 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "players": [
+        "1",
+        "2"
+      ],
+      "events": [
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "bonus",
+            "value": 2
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 4
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "freeze"
+          }
+        },
+        {
+          "type": "effect",
+          "effect": "freeze",
+          "from": "1",
+          "to": "2"
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "multiplier"
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "bonus",
+            "value": 6
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 11
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 5
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 2
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 6
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 8
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 9
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        }
+      ],
+      "scores": {
+        "1": 0,
+        "2": 0
+      }
+    },
+    {
+      "round": 2,
+      "players": [
+        "1",
+        "2"
+      ],
+      "events": [
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 7
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 12
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "second_chance"
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 2
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 3
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 9
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 8
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 7
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 8
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 8
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 12
+          }
+        },
+        {
+          "type": "second_chance_used",
+          "player": "2",
+          "duplicate": 12
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "freeze"
+          }
+        },
+        {
+          "type": "effect",
+          "effect": "freeze",
+          "from": "2",
+          "to": "1"
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 6
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 12
+          }
+        }
+      ],
+      "scores": {
+        "1": 0,
+        "2": 0
+      }
+    },
+    {
+      "round": 3,
+      "players": [
+        "1",
+        "2"
+      ],
+      "events": [
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 3
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 7
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 12
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 11
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 5
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 4
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "bonus",
+            "value": 9
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 11
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 8
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "bonus",
+            "value": 6
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 7
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 6
+          }
+        },
+        {
+          "type": "draw",
+          "player": "1",
+          "card": {
+            "type": "number",
+            "value": 11
+          }
+        },
+        {
+          "type": "draw",
+          "player": "2",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        }
+      ],
+      "scores": {
+        "1": 0,
+        "2": 0
+      }
+    }
+  ]
+}

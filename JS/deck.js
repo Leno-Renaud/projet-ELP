@@ -8,11 +8,10 @@ export default class Deck {
   }
 
   build() {
-    // nombres : N exemplaires de N
-    for (let v = 0; v <= 12; v++) {
-      for (let i = 0; i < v; i++) {
-        this.cards.push(numberCard(v));
-      }
+    // nombres : 0 en 1 exemplaire, puis N exemplaires de N (1..12)
+    this.cards.push(numberCard(0));
+    for (let v = 1; v <= 12; v++) {
+      for (let i = 0; i < v; i++) this.cards.push(numberCard(v));
     }
 
     // actions (quantités approximatives raisonnables)
