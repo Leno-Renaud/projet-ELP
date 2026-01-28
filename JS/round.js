@@ -115,10 +115,31 @@ export default class Round {
         break;
       }
 
-      case CARD_TYPES.FREEZE:
-        player.frozen = true;
-        player.active = false;
+      case CARD_TYPES.FREEZE: {
+        const activePlayers = this.players.filter(p => p.active && p !== player);
+        
+        if (activePlayers.length === 0) {
+          console.log("Aucun autre joueur actif !");
+          break;
+        }
+
+        console.log("\nJoueurs actifs disponibles :");
+        activePlayers.forEach((p, index) => {
+          console.log(`${index + 1}. ${p.name}`);
+        });
+
+        let selectedIndex = -1;
+        while (selectedIndex < 0 || selectedIndex >= activePlayers.length) {
+          const input = await ask(`${player.name}, choisis un joueur (1-${activePlayers.length}) : `);
+          selectedIndex = parseInt(input) - 1;
+        }
+
+        const frozenPlayer = activePlayers[selectedIndex];
+        frozenPlayer.stayed = true;
+        console.log(`${frozenPlayer.name} finit son tour et marque ses points !`);
+        this.logger.log({ type: "freeze", player: player.name, targetPlayer: frozenPlayer.name });
         break;
+      }
 
       case CARD_TYPES.FLIP_THREE:
         for (let i = 0; i < 3; i++) {
