@@ -9,7 +9,11 @@ export default class Round {
   }
 
   async play(roundNumber) {
-    this.players.forEach(p => p.resetRound());
+    this.players.forEach(p => {
+      p.resetRound();
+      // Historique des cartes piochées ce round
+      p.drawnCards = [];
+    });
     this.logger.startRound(roundNumber, this.players);
 
     // distribution initiale
@@ -21,8 +25,9 @@ export default class Round {
 
     while (!finished) {
       for (const p of this.players.filter(x => x.active && !x.stayed)) {
+        console.log(`\n${p.name} a pioché:`, p.drawnCards.map(c => this.formatCard(c)).join(", "));
         const choice = await ask(
-          `\n${p.name} → (p)iocher ou (s)rester ? `
+          `${p.name} → (p)iocher ou (s)rester ? `
         );
 
         if (choice === "s") {
@@ -32,7 +37,6 @@ export default class Round {
         }
 
         await this.drawCard(p);
-
         if (p.numbers.length === 7) {
           console.log(`${p.name} a fait FLIP 7 !`);
           finished = true;
@@ -54,11 +58,23 @@ export default class Round {
     this.logger.endRound(this.players);
   }
 
+  formatCard(card) {
+    if (!card) return "Aucune carte";
+    return card.value !== undefined ? `${card.type}(${card.value})` : `${card.type}`;
+  }
+
   async drawCard(player) {
     const card = this.deck.draw();
     this.logger.log({ type: "draw", player: player.name, card });
 
     if (!card) return;
+
+    // Stocke la carte dans l'historique du joueur
+    if (!player.drawnCards) player.drawnCards = [];
+    player.drawnCards.push(card);
+
+    // Affiche la carte tirée dans le terminal
+    console.log(`${player.name} pioche: ${this.formatCard(card)}`);
 
     switch (card.type) {
       case CARD_TYPES.NUMBER:

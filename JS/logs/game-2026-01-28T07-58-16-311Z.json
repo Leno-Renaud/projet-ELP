@@ -1,0 +1,59 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "players": [
+        "ono",
+        "zz"
+      ],
+      "events": [
+        {
+          "type": "draw",
+          "player": "ono",
+          "card": {
+            "type": "number",
+            "value": 5
+          }
+        },
+        {
+          "type": "draw",
+          "player": "zz",
+          "card": {
+            "type": "multiplier"
+          }
+        },
+        {
+          "type": "draw",
+          "player": "ono",
+          "card": {
+            "type": "bonus",
+            "value": 3
+          }
+        },
+        {
+          "type": "draw",
+          "player": "zz",
+          "card": {
+            "type": "freeze"
+          }
+        },
+        {
+          "type": "draw",
+          "player": "ono",
+          "card": {
+            "type": "number",
+            "value": 10
+          }
+        },
+        {
+          "type": "stay",
+          "player": "ono"
+        }
+      ],
+      "scores": {
+        "ono": 18,
+        "zz": 0
+      }
+    }
+  ]
+}
