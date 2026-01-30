@@ -10,6 +10,58 @@ export default class Round {
     this.flip7Player = null;
   }
 
+  potentialScoreNow(player) {
+    if (!player || player.frozen) return 0;
+
+    let sum = Array.isArray(player.numbers)
+      ? player.numbers.reduce((a, b) => a + b, 0)
+      : 0;
+
+    if (player.multiplier) sum *= 2;
+
+    const bonus = Array.isArray(player.bonuses)
+      ? player.bonuses.reduce((a, b) => a + b, 0)
+      : 0;
+
+    if (Array.isArray(player.numbers) && player.numbers.length === 7) sum += 15;
+
+    return sum + bonus;
+  }
+
+  formatPlayerCards(player) {
+    const cards = Array.isArray(player?.drawnCards) ? player.drawnCards : [];
+
+    const numbers = cards
+      .filter(c => c?.type === CARD_TYPES.NUMBER)
+      .map(c => c.value)
+      .filter(v => typeof v === "number")
+      .sort((a, b) => a - b);
+
+    const bonuses = cards
+      .filter(c => c?.type === CARD_TYPES.BONUS)
+      .map(c => c.value)
+      .filter(v => typeof v === "number")
+      .sort((a, b) => a - b);
+
+    const effectLabels = {
+      [CARD_TYPES.FREEZE]: "freeze",
+      [CARD_TYPES.FLIP_THREE]: "flip three",
+      [CARD_TYPES.SECOND_CHANCE]: "second chance",
+      [CARD_TYPES.MULTIPLIER]: "x2"
+    };
+
+    const effects = cards
+      .filter(c => c && c.type !== CARD_TYPES.NUMBER && c.type !== CARD_TYPES.BONUS)
+      .map(c => effectLabels[c.type] ?? String(c.type))
+      .filter(Boolean);
+
+    const numbersLine = `Nombres: ${numbers.length ? numbers.join(", ") : "—"}`;
+    const bonusLine = `Bonus: ${bonuses.length ? bonuses.map(v => `+${v}`).join(", ") : "—"}`;
+    const effectsLine = `Effets: ${effects.length ? [...new Set(effects)].join(", ") : "—"}`;
+
+    return [numbersLine, bonusLine, effectsLine].join("\n");
+  }
+
   normalizeAction(raw) {
     const v = String(raw ?? "").trim().toLowerCase();
     if (["s", "stop", "rester", "stay"].includes(v)) return "s";
@@ -20,7 +72,6 @@ export default class Round {
   async chooseTarget({ fromPlayer, effectLabel, allowSelf = true } = {}) {
     const eligible = allowSelf ? this.players : this.players.filter(p => p !== fromPlayer);
 
-    // Si on ne peut pas choisir (ex: 1 seul joueur), fallback.
     if (eligible.length === 1) return eligible[0];
 
     console.log(`Choisir une cible pour ${effectLabel}:`);
@@ -52,6 +103,26 @@ export default class Round {
     console.log(`Choisir une cible pour ${label}:`);
     targets.forEach((p, i) => console.log(`  ${i + 1}) ${p.name}`));
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     while (true) {
       const raw = await ask("Cible (numéro ou nom) : ");
       const byNum = Number(raw);
@@ -65,7 +136,6 @@ export default class Round {
   }
 
   async play(roundNumber) {
-    // reset état round
     this.roundOver = false;
     this.flip7Player = null;
 
@@ -78,7 +148,6 @@ export default class Round {
     this.finished = false;
     this.flip7Player = null;
 
-    // distribution initiale
     for (const p of this.players) {
       await this.drawCard(p);
       if (this.roundOver) break;
@@ -88,7 +157,9 @@ export default class Round {
       for (const p of this.players.filter(x => x.active && !x.stayed)) {
         if (this.roundOver) break;
 
-        console.log(`\n${p.name} a pioché:`, p.drawnCards.map(c => this.formatCard(c)).join(", "));
+        const potential = this.potentialScoreNow(p);
+        console.log(`\n${p.name}: ${p.totalScore} points (${potential} points potentiels)`);
+        console.log(this.formatPlayerCards(p));
 
         let choice = null;
         while (!choice) {
@@ -113,8 +184,6 @@ export default class Round {
       if (!activeLeft) break;
     }
 
-
-    // scoring, fin de round
     this.scoreRound();
 
     this.logger.endRound(this.players);
@@ -143,7 +212,6 @@ export default class Round {
 
     if (!card) return;
 
-    // Stocke la carte dans l'historique du joueur 
     if (!player.drawnCards) player.drawnCards = [];
     player.drawnCards.push(card);
 
@@ -154,7 +222,6 @@ export default class Round {
         if (player.hasDuplicate(card.value)) {
           if (player.secondChance) {
             player.secondChance = false;
-            // On défausse le doublon + on consomme la carte SECOND_CHANCE
             const last = player.drawnCards[player.drawnCards.length - 1];
             if (last && last.type === CARD_TYPES.NUMBER && last.value === card.value) player.drawnCards.pop();
             const idx = [...player.drawnCards].reverse().findIndex(c => c.type === CARD_TYPES.SECOND_CHANCE);
