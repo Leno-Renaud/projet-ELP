@@ -200,16 +200,16 @@ func remapPixelsParallel(src [][]Pixel, target [][]Pixel, levels int) [][]Pixel 
 	height := len(target)
 	width := len(target[0])
 
-	// Supply: group all source pixels by bin.
+	// regroupe les pixels source par bins de couleur
 	bins := buildSourceBins(src, levels)
 
-	// Output image (same dimensions).
+	// image de sortie
 	out := make([][]Pixel, height)
 	for y := 0; y < height; y++ {
 		out[y] = make([]Pixel, width)
 	}
 
-	// Create a randomized order of target positions to avoid bias.
+	// Crée un ordre aléatoire des positions cibles pour éviter les biais.
 	positions := make([][2]int, height*width)
 	idx := 0
 	for y := 0; y < height; y++ {
@@ -220,16 +220,16 @@ func remapPixelsParallel(src [][]Pixel, target [][]Pixel, levels int) [][]Pixel 
 	}
 	rand.Shuffle(len(positions), func(i, j int) { positions[i], positions[j] = positions[j], positions[i] })
 
-	// Feed positions into a buffered channel consumed by workers.
+	// Alimente les positions dans un canal consommé par les workers.
 	posCh := make(chan [2]int, len(positions))
 	for _, p := range positions {
 		posCh <- p
 	}
 	close(posCh)
 
-	var mu sync.Mutex // protects access to bins and popPixel
+	var mu sync.Mutex // protège l'accès aux bins et à popPixel
 	workers := runtime.NumCPU()
-	// no need to start more workers than positions
+	// pas besoin de démarrer plus de workers que de positions
 	if workers > len(positions) {
 		workers = len(positions)
 	}
