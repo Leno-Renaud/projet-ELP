@@ -51,6 +51,8 @@ It includes grayscale transformation, downscaling, and pixel remapping, with per
 
 ![Go remap visualization](Ressources/remap_pixels_image_go.png)
 
+This visualization shows a **pixel remapping**: source pixels are repositioned to match the target image distribution while preserving original color values.
+
 ### What this project demonstrates
 - Concurrency and parallel processing in Go.
 - Performance comparison methodology (sequential vs parallel).
